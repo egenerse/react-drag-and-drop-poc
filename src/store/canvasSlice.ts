@@ -1,83 +1,106 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import { v4 as uuidv4 } from "uuid";
-
-type CanvasElement = {
-  id: string;
-  type: string;
-  x: number;
-  y: number;
-};
-
-type Path = {
-  id: string;
-  startElementId: string;
-  startPort: string;
-  endElementId: string;
-  endPort: string;
-};
+import {
+  CanvasElement,
+  ElementType,
+  Position,
+  Dimensions,
+  BaseElementFeatures,
+} from "../types";
 
 interface CanvasState {
   elements: CanvasElement[];
-  paths: Path[];
-  currentConnection: { startElementId: string; startPort: string } | null;
-  tempConnection: { x: number; y: number } | null;
+  pan: Position;
+  zoom: number;
 }
 
 const initialState: CanvasState = {
-  elements: [],
-  paths: [],
-  currentConnection: null,
-  tempConnection: null,
+  elements: [
+    {
+      id: "f39598cf-79ac-4e00-97c4-6d8e47400063",
+      type: ElementType.Box,
+      position: {
+        x: 173.4375,
+        y: 349,
+      },
+      dimensions: {
+        width: 100,
+        height: 100,
+      },
+      features: {
+        movable: true,
+        connectable: true,
+      },
+    },
+    {
+      id: "4f228d74-97a3-41db-81b5-6a7ef0de3acc",
+      type: ElementType.Box,
+      position: {
+        x: 300.4375,
+        y: 246,
+      },
+      dimensions: {
+        width: 100,
+        height: 100,
+      },
+      features: {
+        movable: true,
+        connectable: true,
+      },
+    },
+  ],
+  pan: { x: 0, y: 0 },
+  zoom: 1,
 };
+
+// Define a payload type for adding a new element
+interface AddElementPayload {
+  type: ElementType;
+  position: Position;
+  dimensions: Dimensions;
+  features: BaseElementFeatures;
+}
+
+// Define a payload type for updating the position of an element
+interface UpdateElementPositionPayload {
+  id: string;
+  x: number;
+  y: number;
+}
 
 const canvasSlice = createSlice({
   name: "canvas",
   initialState,
   reducers: {
-    addElement: (state, action: PayloadAction<{ type: string; x: number; y: number }>) => {
-      const newElement = {
+    addElement: (state, action: PayloadAction<AddElementPayload>) => {
+      const newElement: CanvasElement = {
         id: uuidv4(),
         type: action.payload.type,
-        x: action.payload.x,
-        y: action.payload.y,
+        position: action.payload.position,
+        dimensions: action.payload.dimensions,
+        features: action.payload.features,
       };
       state.elements.push(newElement);
     },
-    updateElementPosition: (state, action: PayloadAction<{ id: string; x: number; y: number }>) => {
-        const element = state.elements.find((el) => el.id === action.payload.id);
-        if (element) {
-          element.x = action.payload.x;
-          element.y = action.payload.y;
-        }
-      },
-    startConnection: (state, action: PayloadAction<{ elementId: string; port: string }>) => {
-      state.currentConnection = { startElementId: action.payload.elementId, startPort: action.payload.port };
-      state.tempConnection = null;
-    },
-    completeConnection: (state, action: PayloadAction<{ elementId: string; port: string }>) => {
-      if (state.currentConnection) {
-        const newPath = {
-          id: uuidv4(),
-          startElementId: state.currentConnection.startElementId,
-          startPort: state.currentConnection.startPort,
-          endElementId: action.payload.elementId,
-          endPort: action.payload.port,
-        };
-        state.paths.push(newPath);
-        state.currentConnection = null;
-        state.tempConnection = null;
+    updateElementPosition: (
+      state,
+      action: PayloadAction<UpdateElementPositionPayload>
+    ) => {
+      const element = state.elements.find((el) => el.id === action.payload.id);
+      if (element) {
+        element.position.x = action.payload.x;
+        element.position.y = action.payload.y;
       }
     },
-    cancelConnection: (state) => {
-      state.currentConnection = null;
-      state.tempConnection = null;
+    setPan: (state, action: PayloadAction<Position>) => {
+      state.pan = action.payload;
     },
-    updateTempConnection: (state, action: PayloadAction<{ x: number; y: number }>) => {
-      state.tempConnection = { x: action.payload.x, y: action.payload.y };
+    setZoom: (state, action: PayloadAction<number>) => {
+      state.zoom = action.payload;
     },
   },
 });
 
-export const { addElement, startConnection, completeConnection, cancelConnection, updateTempConnection ,updateElementPosition} =
+export const { addElement, updateElementPosition, setPan, setZoom } =
   canvasSlice.actions;
 export default canvasSlice.reducer;

@@ -1,90 +1,86 @@
-import React, { useState, useEffect, useCallback } from "react";
+// src/components/Canvas.tsx
+import React from "react";
 import { RootState } from "../store";
-import { addElement, updateElementPosition } from "../store/canvasSlice";
-import { throttle } from "lodash";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
-
-const throttledUpdatePosition = throttle((dispatch, id, x, y) => {
-  dispatch(updateElementPosition({ id, x, y }));
-}, 50);
+import CanvasElement from "./CanvasElement";
+import { addElement } from "../store/canvasSlice";
+import { ElementType } from "../types";
+import CanvasRelationship from "./CanvasRelationship";
 
 const Canvas: React.FC = () => {
-  const dispatch = useAppDispatch();
   const elements = useAppSelector((state: RootState) => state.canvas.elements);
-
-  const [draggingElement, setDraggingElement] = useState<{
-    id: string;
-    offsetX: number;
-    offsetY: number;
-  } | null>(null);
+  const connections = useAppSelector(
+    (state: RootState) => state.connections.connections
+  );
+  const tempPath = useAppSelector(
+    (state: RootState) => state.connections.tempPath
+  );
+  const currentConnection = useAppSelector(
+    (state: RootState) => state.connections.currentConnection
+  );
+  const dispatch = useAppDispatch();
+  const relationships = useAppSelector(
+    (state: RootState) => state.relationships.relationships
+  );
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    const type = e.dataTransfer.getData("application/reactflow");
+    const elementType = e.dataTransfer.getData(
+      "application/reactflow"
+    ) as ElementType;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
 
-    if (type) {
-      dispatch(addElement({ type, x, y }));
+    if (elementType) {
+      dispatch(
+        addElement({
+          type: elementType,
+          position: { x, y },
+          dimensions: { width: 100, height: 100 },
+          features: { movable: true, connectable: true },
+        })
+      );
     }
   };
-
-  const handleMouseDown = (e: React.MouseEvent, id: string) => {
-    const element = elements.find((el) => el.id === id);
-    if (element) {
-      const offsetX = e.clientX - element.x;
-      const offsetY = e.clientY - element.y;
-      setDraggingElement({ id, offsetX, offsetY });
-    }
-  };
-
-  const handleMouseMove = useCallback(
-    (e: MouseEvent) => {
-      if (draggingElement) {
-        const x = e.clientX - draggingElement.offsetX;
-        const y = e.clientY - draggingElement.offsetY;
-        throttledUpdatePosition(dispatch, draggingElement.id, x, y);
-      }
-    },
-    [draggingElement, dispatch]
-  );
-
-  const handleMouseUp = () => {
-    setDraggingElement(null);
-  };
-
-  useEffect(() => {
-    if (draggingElement) {
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
-    } else {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    }
-
-    return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
-    };
-  }, [draggingElement, handleMouseMove]);
 
   return (
     <div
-      className="canvas"
+      className="canvas-container"
       onDrop={handleDrop}
-      onDragOver={(e) => e.preventDefault()}
+      onDragOver={(e) => e.preventDefault()} // Required to allow dropping
     >
-      {elements.map((el) => (
-        <div
-          key={el.id}
-          className={`canvas-item ${el.type}`}
-          style={{ left: el.x, top: el.y, position: "absolute" }}
-          onMouseDown={(e) => handleMouseDown(e, el.id)}
-        >
-          {el.type}
-        </div>
-      ))}
+      <div className="canvas">
+        {elements.map((element) => (
+          <CanvasElement key={element.id} element={element} />
+        ))}
+        {relationships.map((relationship) => (
+          <CanvasRelationship
+            key={relationship.id}
+            relationshipId={relationship.id}
+          />
+        ))}
+
+        {/* Render Ghost Line */}
+        {currentConnection && tempPath && (
+          <line
+            x1={
+              elements.find(
+                (el) => el.id === currentConnection.sourceElementId
+              )!.position.x + 25
+            }
+            y1={
+              elements.find(
+                (el) => el.id === currentConnection.sourceElementId
+              )!.position.y + 25
+            }
+            x2={tempPath.x}
+            y2={tempPath.y}
+            stroke="gray"
+            strokeDasharray="4"
+          />
+        )}
+      </div>
     </div>
   );
 };

@@ -1,8 +1,10 @@
+/* General App Layout */
 .app {
   display: flex;
   height: 100vh;
 }
 
+/* Sidebar */
 .sidebar {
   width: 200px;
   padding: 10px;
@@ -15,6 +17,12 @@
   background-color: #ddd;
   cursor: grab;
   text-align: center;
+  border-radius: 4px;
+  transition: background-color 0.2s;
+}
+
+.sidebar-item:hover {
+  background-color: #ccc;
 }
 
 .sidebar-item.box {
@@ -25,18 +33,59 @@
   background-color: #f44336;
 }
 
-.canvas {
-  flex-grow: 1;
+/* Canvas Container and Zoom Controls */
+.canvas-container {
   position: relative;
-  background-color: #fafafa;
-  border: 2px dashed #ccc;
+  flex-grow: 1;
   overflow: hidden;
 }
 
-.canvas-item {
+.zoom-controls {
   position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 10;
+  display: flex;
+  gap: 5px;
+}
+
+.zoom-controls button {
+  padding: 5px 10px;
+  background-color: #333;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  border-radius: 3px;
+}
+
+.zoom-controls button:hover {
+  background-color: #555;
+}
+
+/* Canvas */
+.canvas {
+  background-color: #fafafa;
+  border: 2px dashed #ccc;
+  transform-origin: 0 0;
+  position: relative;
+  width: 2000px;
+  height: 2000px;
+}
+
+/* Canvas Items */
+.canvas-item {
   width: 50px;
   height: 50px;
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: white;
+  text-align: center;
+  user-select: none;
+  border-radius: 4px;
+  cursor: grab;
 }
 
 .canvas-item.box {
@@ -51,21 +100,14 @@
   border-bottom: 50px solid #f44336;
 }
 
-.canvas-item {
-  position: absolute;
-  width: 50px;
-  height: 50px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
+/* Ports for Connecting Elements */
 .port {
   width: 10px;
   height: 10px;
   background-color: red;
   position: absolute;
   cursor: pointer;
+  border-radius: 50%;
 }
 
 .top-port {
@@ -80,6 +122,7 @@
   transform: translateX(-50%);
 }
 
+/* Connection Lines */
 .connections line {
   stroke-width: 2;
   stroke: #333;
