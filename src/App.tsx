@@ -7,7 +7,6 @@ const App: React.FC = () => {
   return (
     <div className="app">
       <Sidebar />
-
       <Canvas />
     </div>
   );

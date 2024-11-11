@@ -1,20 +1,30 @@
-import React, { useState } from "react";
+import React, { RefObject, useEffect, useState } from "react";
 import { CanvasElement as CanvasElementType } from "../types";
 import { useMovable } from "../hooks";
 import "./CanvasElement.css";
 
 type CanvasElementProps = {
   element: CanvasElementType;
+  onMove: (x: number, y: number) => void; // Callback for movement
+ canvasRef: RefObject<HTMLDivElement> // Accept the ref as a parameter
+
 };
 
-const CanvasElement: React.FC<CanvasElementProps> = ({ element }) => {
+const CanvasElement: React.FC<CanvasElementProps> = ({ element, onMove ,canvasRef}) => {
   const [selected, setSelected] = useState(false);
   const { id, type, position, dimensions, features } = element;
 
   // Movable functionality
-  const { position: movablePosition, handlePointerDown } =
-    useMovable(id, position, Boolean(selected && features.movable));
+  const { position: movablePosition, handlePointerDown } = useMovable(
+    id,
+    position,
+    Boolean(selected && features.movable),
+    canvasRef,
+  );
 
+  useEffect(() => {
+    onMove(position.x, position.y);
+  }, [position, onMove]);
 
   const portPositions = {
     top: { top: -5, left: dimensions.width / 2 - 5 },
@@ -37,7 +47,6 @@ const CanvasElement: React.FC<CanvasElementProps> = ({ element }) => {
         backgroundColor: selected ? "#388e3c" : "#4caf50", // Different color when selected
         cursor: selected && features.movable ? "move" : "default",
       }}
-
       onPointerDown={(e) => {
         handleSelect();
         handlePointerDown(e);

@@ -1,5 +1,6 @@
 import React from "react";
 import { ElementType } from "../types"; // Ensure this path is correct
+import "./Sidebar.css"
 
 const Sidebar: React.FC = () => {
   const handleMouseDragStart = (

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, RefObject } from "react";
 import { throttle } from "lodash";
 import { useAppDispatch } from "../store/hooks";
 import { updateElementPosition } from "../store/canvasSlice";
@@ -6,7 +6,8 @@ import { updateElementPosition } from "../store/canvasSlice";
 export const useMovable = (
   id: string,
   initialPosition: { x: number; y: number },
-  enabled: boolean
+  enabled: boolean,
+  canvasRef: RefObject<HTMLDivElement> // Accept the ref as a parameter
 ) => {
   const dispatch = useAppDispatch();
   const [position, setPosition] = useState(initialPosition);
@@ -23,10 +24,17 @@ export const useMovable = (
   };
 
   const handlePointerDown = (e: React.MouseEvent | React.TouchEvent) => {
+    console.log("DEBUGUGUGUU handlePointerDown");
+
     if (!enabled) return;
     const x = "clientX" in e ? e.clientX : e.touches[0].clientX;
     const y = "clientY" in e ? e.clientY : e.touches[0].clientY;
     startDragging(x, y);
+
+    // Lock scroll on the canvas using the ref
+    if (canvasRef.current) {
+      canvasRef.current.style.touchAction = "none";
+    }
   };
 
   const handlePointerMove = useCallback(
@@ -43,7 +51,15 @@ export const useMovable = (
     [isDragging, offset, throttledUpdatePosition]
   );
 
-  const handlePointerUp = () => setIsDragging(false);
+  const handlePointerUp = () => {
+    console.log("DEBUGUGUGUU handlePointerUp");
+    setIsDragging(false);
+
+    // Ensure canvas scroll is re-enabled if the hook is cleaned up
+    if (canvasRef.current) {
+      canvasRef.current.style.touchAction = "auto";
+    }
+  };
 
   useEffect(() => {
     if (isDragging) {
@@ -53,12 +69,16 @@ export const useMovable = (
       window.addEventListener("touchend", handlePointerUp);
     }
     return () => {
+      if (canvasRef.current) {
+        canvasRef.current.style.touchAction = "auto";
+      }
+
       window.removeEventListener("mousemove", handlePointerMove);
       window.removeEventListener("mouseup", handlePointerUp);
       window.removeEventListener("touchmove", handlePointerMove);
       window.removeEventListener("touchend", handlePointerUp);
     };
-  }, [isDragging, handlePointerMove]);
+  }, [isDragging, handlePointerMove, canvasRef]);
 
   return { position, handlePointerDown };
 };

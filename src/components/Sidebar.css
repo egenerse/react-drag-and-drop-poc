@@ -1,0 +1,33 @@
+/* Sidebar */
+.sidebar {
+    flex: 1;
+    padding: 10px;
+    background-color: #f0f0f0;
+  }
+  
+  .sidebar-item {
+    padding: 10px;
+    margin: 5px 0;
+    background-color: white;
+    border: 1px solid #ccc;
+    cursor: grab;
+    user-select: none;
+  }
+  
+  
+  .sidebar-item:hover {
+    background-color: #ccc;
+  }
+  
+  .sidebar-item.box {
+    background-color: #4caf50;
+  }
+  
+  .sidebar-item.triangle {
+    background-color: #f44336;
+  }
+  
+  .sidebar-item:active {
+    cursor: grabbing;
+  }
+  
