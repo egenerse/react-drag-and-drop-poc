@@ -7,7 +7,13 @@ import { addElement } from "../store/canvasSlice";
 import { ElementType } from "../types";
 import CanvasRelationship from "./CanvasRelationship";
 
-const Canvas: React.FC = () => {
+interface CanvasProps {
+  draggingElement: ElementType | null;
+  dragPosition: { x: number; y: number } | null;
+  resetDragging:()=>void
+}
+
+const Canvas: React.FC<CanvasProps> = ({ draggingElement, dragPosition,resetDragging }) => {
   const elements = useAppSelector((state: RootState) => state.canvas.elements);
   const connections = useAppSelector(
     (state: RootState) => state.connections.connections
@@ -42,12 +48,32 @@ const Canvas: React.FC = () => {
         })
       );
     }
+    resetDragging()
+  };
+  const handlePointerEventDown = (e: React.PointerEvent) => {
+    if (draggingElement) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+
+      console.log("DEBUG rect,", rect);
+      dispatch(
+        addElement({
+          type: ElementType.Box,
+          position: { x, y },
+          dimensions: { width: 100, height: 100 },
+          features: { movable: true, connectable: true },
+        })
+      );
+    }
+    resetDragging()
   };
 
   return (
     <div
       className="canvas-container"
       onDrop={handleDrop}
+      onPointerDown={handlePointerEventDown}
       onDragOver={(e) => e.preventDefault()} // Required to allow dropping
     >
       <div className="canvas">
@@ -79,6 +105,24 @@ const Canvas: React.FC = () => {
             stroke="gray"
             strokeDasharray="4"
           />
+        )}
+
+        {/* Render the ghost element if dragging */}
+        {draggingElement && dragPosition && (
+          <div
+            className="drag-preview"
+            style={{
+              position: "absolute",
+              top: dragPosition.y,
+              left: dragPosition.x,
+              transform: "translate(-50%, -50%)", // Center the ghost
+              pointerEvents: "none",
+              opacity: 0.7,
+              zIndex: 1000,
+            }}
+          >
+            {draggingElement}
+          </div>
         )}
       </div>
     </div>
