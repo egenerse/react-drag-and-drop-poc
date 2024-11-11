@@ -1,3 +1,3 @@
 ## Demo Video
 
-![Demo Video](./media/ios.mp4)
+![Demo Video](./media/ios.gif)
