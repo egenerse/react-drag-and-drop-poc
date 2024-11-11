@@ -10,10 +10,22 @@ import "./Canvas.css";
 const Canvas: React.FC = () => {
   const [canvasSize, setCanvasSize] = useState({ width: 1000, height: 1000 });
   const canvasRef = useRef<HTMLDivElement>(null);
+  const dispatch = useAppDispatch();
 
-  // Function to check element positions and expand canvas if necessary
+  const elements = useAppSelector((state: RootState) => state.canvas.elements);
+  const tempPath = useAppSelector(
+    (state: RootState) => state.connections.tempPath
+  );
+  const currentConnection = useAppSelector(
+    (state: RootState) => state.connections.currentConnection
+  );
+  const relationships = useAppSelector(
+    (state: RootState) => state.relationships.relationships
+  );
+
+  // Function to expand canvas if an element is placed near the edge
   const expandCanvasIfNeeded = (x: number, y: number) => {
-    const padding = 100; // Distance from edge to trigger expansion
+    const padding = 100;
     const newWidth =
       x + padding > canvasSize.width
         ? canvasSize.width + 500
@@ -27,31 +39,13 @@ const Canvas: React.FC = () => {
     }
   };
 
-  const elements = useAppSelector((state: RootState) => state.canvas.elements);
-  const tempPath = useAppSelector(
-    (state: RootState) => state.connections.tempPath
-  );
-  const currentConnection = useAppSelector(
-    (state: RootState) => state.connections.currentConnection
-  );
-  const dispatch = useAppDispatch();
-  const relationships = useAppSelector(
-    (state: RootState) => state.relationships.relationships
-  );
-
   const handleElementMove = (x: number, y: number) => {
     expandCanvasIfNeeded(x, y);
   };
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (canvas) {
-      canvas.style.width = `${canvasSize.width}px`;
-      canvas.style.height = `${canvasSize.height}px`;
-    }
-  }, [canvasSize]);
-
+  // Handles drop event for mouse dragging
   const handleDrop = (e: React.DragEvent) => {
+    console.log("DEBUG handle dropppppp")
     e.preventDefault();
     const elementType = e.dataTransfer.getData(
       "application/reactflow"
@@ -71,6 +65,55 @@ const Canvas: React.FC = () => {
       );
     }
   };
+
+  // Handles custom touch drop event
+  const handleCustomDrop = React.useCallback(
+    (e: CustomEvent) => {
+      if (!canvasRef.current) return;
+
+      const elementType = e.detail.type as ElementType;
+
+      if (elementType) {
+        console.log("debug handleCustomDrop  elementType", elementType);
+        const rect = canvasRef.current.getBoundingClientRect();
+        console.log("DEBUG handleCustom drop ,")
+        const x = e.detail.x - rect.left;
+        const y = e.detail.y - rect.top;
+
+        console.log("debug handleCustomDrop  x", x, "y,", y);
+
+        if (!!x && !!y) {
+          dispatch(
+            addElement({
+              type: elementType,
+              position: { x, y },
+              dimensions: { width: 100, height: 100 },
+              features: { movable: true, connectable: true },
+            })
+          );
+        }
+      }
+    },
+    [dispatch]
+  );
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+
+    // Adjust canvas size based on canvasSize state
+    if (canvas) {
+      canvas.style.width = `${canvasSize.width}px`;
+      canvas.style.height = `${canvasSize.height}px`;
+    }
+
+    // Listen for custom drop event for touch
+    document.addEventListener("drop", handleCustomDrop as EventListener);
+
+    return () => {
+      // Cleanup custom drop listener
+      document.removeEventListener("drop", handleCustomDrop as EventListener);
+    };
+  }, [canvasSize, handleCustomDrop]);
 
   return (
     <div

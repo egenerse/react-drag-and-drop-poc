@@ -51,7 +51,7 @@ export const useMovable = (
     [isDragging, offset, throttledUpdatePosition]
   );
 
-  const handlePointerUp = () => {
+  const handlePointerUp = useCallback(() => {
     console.log("DEBUGUGUGUU handlePointerUp");
     setIsDragging(false);
 
@@ -59,7 +59,7 @@ export const useMovable = (
     if (canvasRef.current) {
       canvasRef.current.style.touchAction = "auto";
     }
-  };
+  }, [canvasRef]);
 
   useEffect(() => {
     if (isDragging) {
@@ -68,9 +68,12 @@ export const useMovable = (
       window.addEventListener("touchmove", handlePointerMove);
       window.addEventListener("touchend", handlePointerUp);
     }
+
+    const canvas = canvasRef.current;
+
     return () => {
-      if (canvasRef.current) {
-        canvasRef.current.style.touchAction = "auto";
+      if (canvas) {
+        canvas.style.touchAction = "auto";
       }
 
       window.removeEventListener("mousemove", handlePointerMove);
@@ -78,7 +81,7 @@ export const useMovable = (
       window.removeEventListener("touchmove", handlePointerMove);
       window.removeEventListener("touchend", handlePointerUp);
     };
-  }, [isDragging, handlePointerMove, canvasRef]);
+  }, [isDragging, handlePointerMove, canvasRef, handlePointerUp]);
 
   return { position, handlePointerDown };
 };
