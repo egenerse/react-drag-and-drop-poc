@@ -3,7 +3,11 @@ import { throttle } from "lodash";
 import { useAppDispatch } from "../store/hooks";
 import { updateElementPosition } from "../store/canvasSlice";
 
-export const useMovable = (id: string, initialPosition: { x: number; y: number }, enabled: boolean) => {
+export const useMovable = (
+  id: string,
+  initialPosition: { x: number; y: number },
+  enabled: boolean
+) => {
   const dispatch = useAppDispatch();
   const [position, setPosition] = useState(initialPosition);
   const [isDragging, setIsDragging] = useState(false);
@@ -13,36 +17,48 @@ export const useMovable = (id: string, initialPosition: { x: number; y: number }
     dispatch(updateElementPosition({ id, x, y }));
   }, 50);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!enabled) return;
+  const startDragging = (x: number, y: number) => {
     setIsDragging(true);
-    setOffset({ x: e.clientX - position.x, y: e.clientY - position.y });
+    setOffset({ x: x - position.x, y: y - position.y });
   };
 
-  const handleMouseMove = useCallback(
-    (e: MouseEvent) => {
+  const handlePointerDown = (e: React.MouseEvent | React.TouchEvent) => {
+    if (!enabled) return;
+    const x = "clientX" in e ? e.clientX : e.touches[0].clientX;
+    const y = "clientY" in e ? e.clientY : e.touches[0].clientY;
+    startDragging(x, y);
+  };
+
+  const handlePointerMove = useCallback(
+    (e: MouseEvent | TouchEvent) => {
       if (isDragging) {
-        const x = e.clientX - offset.x;
-        const y = e.clientY - offset.y;
-        setPosition({ x, y });
-        throttledUpdatePosition(x, y);
+        const x = "clientX" in e ? e.clientX : e.touches[0].clientX;
+        const y = "clientY" in e ? e.clientY : e.touches[0].clientY;
+        const adjustedX = x - offset.x;
+        const adjustedY = y - offset.y;
+        setPosition({ x: adjustedX, y: adjustedY });
+        throttledUpdatePosition(adjustedX, adjustedY);
       }
     },
     [isDragging, offset, throttledUpdatePosition]
   );
 
-  const handleMouseUp = () => setIsDragging(false);
+  const handlePointerUp = () => setIsDragging(false);
 
   useEffect(() => {
     if (isDragging) {
-      window.addEventListener("mousemove", handleMouseMove);
-      window.addEventListener("mouseup", handleMouseUp);
+      window.addEventListener("mousemove", handlePointerMove);
+      window.addEventListener("mouseup", handlePointerUp);
+      window.addEventListener("touchmove", handlePointerMove);
+      window.addEventListener("touchend", handlePointerUp);
     }
     return () => {
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      window.removeEventListener("mousemove", handlePointerMove);
+      window.removeEventListener("mouseup", handlePointerUp);
+      window.removeEventListener("touchmove", handlePointerMove);
+      window.removeEventListener("touchend", handlePointerUp);
     };
-  }, [isDragging, handleMouseMove]);
+  }, [isDragging, handlePointerMove]);
 
-  return { position, handleMouseDown };
+  return { position, handlePointerDown };
 };

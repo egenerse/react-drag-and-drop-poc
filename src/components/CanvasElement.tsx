@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { CanvasElement as CanvasElementType } from "../types";
-import { useMovable } from "../hooks/useMovable";
-import { useConnectable } from "../hooks/useConnectable";
+import { useMovable } from "../hooks";
 import "./CanvasElement.css";
 
 type CanvasElementProps = {
@@ -9,18 +8,13 @@ type CanvasElementProps = {
 };
 
 const CanvasElement: React.FC<CanvasElementProps> = ({ element }) => {
+  const [selected, setSelected] = useState(false);
   const { id, type, position, dimensions, features } = element;
 
   // Movable functionality
-  const { position: movablePosition, handleMouseDown: handleElementMouseDown } =
-    useMovable(id, position, features.movable || false);
+  const { position: movablePosition, handlePointerDown } =
+    useMovable(id, position, Boolean(selected && features.movable));
 
-  // Connectable functionality
-  const { handlePortMouseDown,  handlePortMouseUp } =
-    useConnectable(id);
-
-  // State to manage port visibility
-  const [showPorts, setShowPorts] = useState(false);
 
   const portPositions = {
     top: { top: -5, left: dimensions.width / 2 - 5 },
@@ -29,11 +23,8 @@ const CanvasElement: React.FC<CanvasElementProps> = ({ element }) => {
     left: { top: dimensions.height / 2 - 5, left: -5 },
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if (!e.defaultPrevented) {
-      handleElementMouseDown(e);
-    }
-  };
+  const handleSelect = () => setSelected((prev) => !prev); // Toggle selection on click
+
   return (
     <div
       className="canvas-element"
@@ -43,18 +34,19 @@ const CanvasElement: React.FC<CanvasElementProps> = ({ element }) => {
         top: movablePosition.y,
         width: dimensions.width,
         height: dimensions.height,
-        backgroundColor: "#4caf50",
-        cursor: features.movable ? "move" : "default",
+        backgroundColor: selected ? "#388e3c" : "#4caf50", // Different color when selected
+        cursor: selected && features.movable ? "move" : "default",
       }}
-      onPointerDown={handleMouseDown} // Drag handling only on the element, not ports
-      // onMouseDown={handleMouseDown} // Drag handling only on the element, not ports
-      onMouseEnter={() => setShowPorts(true)}
-      onMouseLeave={() => setShowPorts(false)}
+
+      onPointerDown={(e) => {
+        handleSelect();
+        handlePointerDown(e);
+      }} // Drag handling only when selected
     >
       {type}
 
       {/* Render connection ports conditionally */}
-      {showPorts && features.connectable && (
+      {selected && features.connectable && (
         <>
           {Object.entries(portPositions).map(([position, style]) => (
             <div
@@ -63,19 +55,12 @@ const CanvasElement: React.FC<CanvasElementProps> = ({ element }) => {
               style={style}
               onMouseDown={(e) => {
                 e.preventDefault();
-                handlePortMouseDown(position);
                 e.stopPropagation();
               }}
               onMouseUp={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                handlePortMouseUp(id, position);
               }}
-            //   onPointer={(e) => {
-            //     e.preventDefault();
-            //     e.stopPropagation();
-            //     handlePortMouseMove(e.clientX, e.clientY);
-            //   }} // Update ghost line position
             />
           ))}
         </>
