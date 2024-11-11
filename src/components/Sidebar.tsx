@@ -1,4 +1,3 @@
-// Sidebar.tsx
 import React from "react";
 import { ElementType } from "../types"; // Ensure this path is correct
 import { useAppDispatch } from "../store/hooks";

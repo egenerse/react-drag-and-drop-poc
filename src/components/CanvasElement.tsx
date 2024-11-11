@@ -1,4 +1,3 @@
-// src/components/CanvasElement.tsx
 import React, { useState } from "react";
 import { CanvasElement as CanvasElementType } from "../types";
 import { useMovable } from "../hooks/useMovable";
@@ -17,7 +16,7 @@ const CanvasElement: React.FC<CanvasElementProps> = ({ element }) => {
     useMovable(id, position, features.movable || false);
 
   // Connectable functionality
-  const { handlePortMouseDown, handlePortMouseMove, handlePortMouseUp } =
+  const { handlePortMouseDown,  handlePortMouseUp } =
     useConnectable(id);
 
   // State to manage port visibility

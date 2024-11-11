@@ -1,4 +1,3 @@
-// src/components/Canvas.tsx
 import React from "react";
 import { RootState } from "../store";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -15,9 +14,9 @@ interface CanvasProps {
 
 const Canvas: React.FC<CanvasProps> = ({ draggingElement, dragPosition,resetDragging }) => {
   const elements = useAppSelector((state: RootState) => state.canvas.elements);
-  const connections = useAppSelector(
-    (state: RootState) => state.connections.connections
-  );
+  // const connections = useAppSelector(
+  //   (state: RootState) => state.connections.connections
+  // );
   const tempPath = useAppSelector(
     (state: RootState) => state.connections.tempPath
   );

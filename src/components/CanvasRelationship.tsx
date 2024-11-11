@@ -1,4 +1,3 @@
-// src/components/CanvasRelationship.tsx
 import React from "react";
 import { useAppSelector } from "../store/hooks";
 import { RootState } from "../store";
