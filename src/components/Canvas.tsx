@@ -119,23 +119,10 @@ const Canvas: React.FC = () => {
   }, [canvasSize, handleCustomDrop]);
 
 
-  const handlePan = (e: React.PointerEvent) => {
-    if (isPanning.current) {
-      const dx = e.clientX - panStart.current.x;
-      const dy = e.clientY - panStart.current.y;
-      setTransform(prev => ({
-        ...prev,
-        x: prev.x + dx,
-        y: prev.y + dy,
-      }));
-      panStart.current = { x: e.clientX, y: e.clientY };
-    }
-  };
-
   // Function to handle zooming
   const handleZoom = (e: WheelEvent) => {
     e.preventDefault();
-    setTransform(prev => ({
+    setTransform((prev) => ({
       ...prev,
       scale: Math.max(0.5, prev.scale + e.deltaY * -0.001),
     }));
@@ -153,16 +140,61 @@ const Canvas: React.FC = () => {
     };
   }, []);
 
+  const startPan = (e: React.PointerEvent | React.TouchEvent) => {
+    e.preventDefault();
+    isPanning.current = true;
+    // Capture the starting position of the pointer or touch
+    const x =
+      "clientX" in e ? e.clientX : (e as React.TouchEvent).touches[0].clientX;
+    const y =
+      "clientY" in e ? e.clientY : (e as React.TouchEvent).touches[0].clientY;
+    panStart.current = {
+      x,
+      y,
+    };
+  };
+
+  const handlePanMove = (e: PointerEvent) => {
+    if (!isPanning.current) return;
+
+    // Calculate movement delta
+    const dx = e.clientX - panStart.current.x;
+    const dy = e.clientY - panStart.current.y;
+
+    // Update transform position
+    setTransform((prev) => ({
+      ...prev,
+      x: prev.x + dx,
+      y: prev.y + dy,
+    }));
+
+    // Update starting position
+    panStart.current = { x: e.clientX, y: e.clientY };
+  };
+
+  const stopPan = () => {
+    isPanning.current = false;
+  };
+
+  React.useEffect(() => {
+    // Attach pointermove and pointerup listeners to handle panning globally
+    window.addEventListener("pointermove", handlePanMove);
+    window.addEventListener("pointerup", stopPan);
+
+    return () => {
+      // Cleanup on unmount
+      window.removeEventListener("pointermove", handlePanMove);
+      window.removeEventListener("pointerup", stopPan);
+    };
+  }, []);
 
   return (
     <div
       className="canvas-container"
       onDrop={handleDrop}
       onDragOver={(e) => e.preventDefault()} // Required to allow dropping
-      onPointerMove={handlePan}
-      onPointerUp={() => (isPanning.current = true)}
-      onPointerLeave={() => (isPanning.current = false)}
-      
+      onPointerDown={startPan}
+      onPointerUp={stopPan}
     >
       <svg
         ref={canvasRef}
