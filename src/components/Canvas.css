@@ -2,7 +2,7 @@
 .canvas-container {
   position: relative;
   flex-grow: 4;
-  overflow: auto; /* Allow scrolling */
+  overflow: hidden; 
   background-color: #eaeaea;
 }
 

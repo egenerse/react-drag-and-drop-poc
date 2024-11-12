@@ -9,8 +9,11 @@ import "./Canvas.css";
 
 const Canvas: React.FC = () => {
   const [canvasSize, setCanvasSize] = useState({ width: 1000, height: 1000 });
-  const canvasRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<SVGSVGElement>(null);
   const dispatch = useAppDispatch();
+  const [transform, setTransform] = useState({ x: 0, y: 0, scale: 1 });
+  const isPanning = useRef(false);
+  const panStart = useRef({ x: 0, y: 0 });
 
   const elements = useAppSelector((state: RootState) => state.canvas.elements);
   const tempPath = useAppSelector(
@@ -45,7 +48,7 @@ const Canvas: React.FC = () => {
 
   // Handles drop event for mouse dragging
   const handleDrop = (e: React.DragEvent) => {
-    console.log("DEBUG handle dropppppp")
+    console.log("DEBUG handle dropppppp");
     e.preventDefault();
     const elementType = e.dataTransfer.getData(
       "application/reactflow"
@@ -76,7 +79,7 @@ const Canvas: React.FC = () => {
       if (elementType) {
         console.log("debug handleCustomDrop  elementType", elementType);
         const rect = canvasRef.current.getBoundingClientRect();
-        console.log("DEBUG handleCustom drop ,")
+        console.log("DEBUG handleCustom drop ,");
         const x = e.detail.x - rect.left;
         const y = e.detail.y - rect.top;
 
@@ -115,13 +118,65 @@ const Canvas: React.FC = () => {
     };
   }, [canvasSize, handleCustomDrop]);
 
+
+  const handlePan = (e: React.PointerEvent) => {
+    if (isPanning.current) {
+      const dx = e.clientX - panStart.current.x;
+      const dy = e.clientY - panStart.current.y;
+      setTransform(prev => ({
+        ...prev,
+        x: prev.x + dx,
+        y: prev.y + dy,
+      }));
+      panStart.current = { x: e.clientX, y: e.clientY };
+    }
+  };
+
+  // Function to handle zooming
+  const handleZoom = (e: WheelEvent) => {
+    e.preventDefault();
+    setTransform(prev => ({
+      ...prev,
+      scale: Math.max(0.5, prev.scale + e.deltaY * -0.001),
+    }));
+  };
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      canvas.addEventListener("wheel", handleZoom);
+    }
+    return () => {
+      if (canvas) {
+        canvas.removeEventListener("wheel", handleZoom);
+      }
+    };
+  }, []);
+
+
   return (
     <div
       className="canvas-container"
       onDrop={handleDrop}
       onDragOver={(e) => e.preventDefault()} // Required to allow dropping
+      onPointerMove={handlePan}
+      onPointerUp={() => (isPanning.current = true)}
+      onPointerLeave={() => (isPanning.current = false)}
+      
     >
-      <div ref={canvasRef} className="canvas">
+      <svg
+        ref={canvasRef}
+        // transform="translate(-%50 ,-50%)"
+        className="canvas"
+        width="100%"
+        height="100%"
+        onDrop={handleDrop}
+        onDragOver={(e) => e.preventDefault()} // Required to allow dropping
+        style={{
+          transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
+          transformOrigin: "center",
+        }}
+      >
         {elements.map((element) => (
           <CanvasElement
             key={element.id}
@@ -136,26 +191,23 @@ const Canvas: React.FC = () => {
             relationshipId={relationship.id}
           />
         ))}
-
-        {currentConnection && tempPath && (
-          <line
-            x1={
-              elements.find(
-                (el) => el.id === currentConnection.sourceElementId
-              )!.position.x + 25
-            }
-            y1={
-              elements.find(
-                (el) => el.id === currentConnection.sourceElementId
-              )!.position.y + 25
-            }
-            x2={tempPath.x}
-            y2={tempPath.y}
-            stroke="gray"
-            strokeDasharray="4"
-          />
-        )}
-      </div>
+      </svg>
+      {currentConnection && tempPath && (
+        <line
+          x1={
+            elements.find((el) => el.id === currentConnection.sourceElementId)!
+              .position.x + 25
+          }
+          y1={
+            elements.find((el) => el.id === currentConnection.sourceElementId)!
+              .position.y + 25
+          }
+          x2={tempPath.x}
+          y2={tempPath.y}
+          stroke="gray"
+          strokeDasharray="4"
+        />
+      )}
     </div>
   );
 };

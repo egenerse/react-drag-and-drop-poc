@@ -98,9 +98,12 @@ const canvasSlice = createSlice({
     setZoom: (state, action: PayloadAction<number>) => {
       state.zoom = action.payload;
     },
+    removeElementById(state, action: PayloadAction<string>) {
+      state.elements = state.elements.filter((el) => el.id !== action.payload);
+    }
   },
 });
 
-export const { addElement, updateElementPosition, setPan, setZoom } =
+export const { addElement, updateElementPosition, setPan, setZoom ,removeElementById} =
   canvasSlice.actions;
 export default canvasSlice.reducer;

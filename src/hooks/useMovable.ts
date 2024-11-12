@@ -7,7 +7,7 @@ export const useMovable = (
   id: string,
   initialPosition: { x: number; y: number },
   enabled: boolean,
-  canvasRef: RefObject<HTMLDivElement> // Accept the ref as a parameter
+  canvasRef: RefObject<SVGSVGElement> // Accept the ref as a parameter
 ) => {
   const dispatch = useAppDispatch();
   const [position, setPosition] = useState(initialPosition);
@@ -25,8 +25,8 @@ export const useMovable = (
 
   const handlePointerDown = (e: React.MouseEvent | React.TouchEvent) => {
     console.log("DEBUGUGUGUU handlePointerDown");
-
     if (!enabled) return;
+
     const x = "clientX" in e ? e.clientX : e.touches[0].clientX;
     const y = "clientY" in e ? e.clientY : e.touches[0].clientY;
     startDragging(x, y);
@@ -34,6 +34,7 @@ export const useMovable = (
     // Lock scroll on the canvas using the ref
     if (canvasRef.current) {
       canvasRef.current.style.touchAction = "none";
+      canvasRef.current.style.userSelect = "none"; // Prevents text selection
     }
   };
 
@@ -46,6 +47,8 @@ export const useMovable = (
         const adjustedY = y - offset.y;
         setPosition({ x: adjustedX, y: adjustedY });
         throttledUpdatePosition(adjustedX, adjustedY);
+        e.stopPropagation();
+
       }
     },
     [isDragging, offset, throttledUpdatePosition]
@@ -58,6 +61,7 @@ export const useMovable = (
     // Ensure canvas scroll is re-enabled if the hook is cleaned up
     if (canvasRef.current) {
       canvasRef.current.style.touchAction = "auto";
+      canvasRef.current.style.userSelect = "auto"; // Restores default
     }
   }, [canvasRef]);
 
