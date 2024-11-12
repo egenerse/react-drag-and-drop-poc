@@ -8,7 +8,9 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "capacitor:sync": "npx cap sync"
+    "capacitor:sync": "npx cap sync",
+    "capacitor:ios": "npx cap open ios",
+    "capacitor:android": "npx cap open android"
   },
   "dependencies": {
     "@capacitor/android": "^6.1.2",

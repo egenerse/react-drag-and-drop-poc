@@ -1,4 +1,4 @@
-import React, { RefObject, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { CanvasElement as CanvasElementType } from "../types";
 import { useMovable } from "../hooks";
 import "./CanvasElement.css";
@@ -7,22 +7,27 @@ import { useAppDispatch } from "../store/hooks";
 
 type CanvasElementProps = {
   element: CanvasElementType;
-  onMove: (x: number, y: number) => void; // Callback for movement
-  canvasRef: RefObject<SVGSVGElement>; // Accept the ref as a parameter
+  onMove: (x: number, y: number) => void;
 };
 
 const CanvasElement: React.FC<CanvasElementProps> = ({
   element,
   onMove,
-  canvasRef,
 }) => {
   const [selected, setSelected] = useState(false);
   const { id, type, position, dimensions, features } = element;
   const dispatch = useAppDispatch();
 
-  const handleDelete = () => {
+  // Movable functionality
+  const { position: movablePosition, handlePointerDown } = useMovable(
+    id,
+    position,
+    Boolean(selected && features.movable) // Enable movement only if selected
+  );
+
+  const handleDelete = React.useCallback(() => {
     dispatch(removeElementById(id));
-  };
+  }, [dispatch, id]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -32,30 +37,23 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
       }
     };
 
-    // Attach the event listener when the element is selected
     if (selected) {
       window.addEventListener("keydown", handleKeyDown);
     }
 
-    // Remove the event listener when the component unmounts or deselects
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [handleDelete, selected]);
 
-  // Movable functionality
-  const { position: movablePosition, handlePointerDown } = useMovable(
-    id,
-    position,
-    Boolean(selected && features.movable),
-    canvasRef
-  );
-
   useEffect(() => {
     onMove(position.x, position.y);
   }, [position, onMove]);
 
-  const handleSelect = () => setSelected((prev) => !prev); // Toggle selection on click
+  const handleSelect = (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation(); // Prevent other events from triggering
+    setSelected((prev) => !prev); // Toggle selection on click
+  };
 
   return (
     <>
@@ -68,8 +66,8 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
           fill={selected ? "#388e3c" : "#4caf50"}
           cursor={selected && features.movable ? "move" : "default"}
           onPointerDown={(e) => {
-            handleSelect();
-            handlePointerDown(e);
+            handleSelect(e);
+            if (selected) handlePointerDown(e); // Only make movable if selected
           }}
         />
       )}
@@ -84,8 +82,8 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
           fill="#f44336"
           cursor={selected && features.movable ? "move" : "default"}
           onPointerDown={(e) => {
-            handleSelect();
-            handlePointerDown(e);
+            handleSelect(e);
+            if (selected) handlePointerDown(e); // Only make movable if selected
           }}
         />
       )}
@@ -93,12 +91,12 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
         <circle
           cx={movablePosition.x}
           cy={movablePosition.y}
-          r={dimensions.width / 2} // The radius is half the width to match the size logic
-          fill="#4caf50" // Set your color here
+          r={dimensions.width / 2}
+          fill="#4caf50"
           cursor={selected && features.movable ? "move" : "default"}
           onPointerDown={(e) => {
-            handleSelect();
-            handlePointerDown(e);
+            handleSelect(e);
+            if (selected) handlePointerDown(e); // Only make movable if selected
           }}
         />
       )}

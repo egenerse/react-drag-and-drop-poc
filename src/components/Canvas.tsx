@@ -214,7 +214,6 @@ const Canvas: React.FC = () => {
             key={element.id}
             element={element}
             onMove={handleElementMove}
-            canvasRef={canvasRef}
           />
         ))}
         {relationships.map((relationship) => (

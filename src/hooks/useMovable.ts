@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, RefObject } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { throttle } from "lodash";
 import { useAppDispatch } from "../store/hooks";
 import { updateElementPosition } from "../store/canvasSlice";
@@ -6,86 +6,70 @@ import { updateElementPosition } from "../store/canvasSlice";
 export const useMovable = (
   id: string,
   initialPosition: { x: number; y: number },
-  enabled: boolean,
-  canvasRef: RefObject<SVGSVGElement> // Accept the ref as a parameter
+  enabled: boolean
 ) => {
   const dispatch = useAppDispatch();
   const [position, setPosition] = useState(initialPosition);
-  const [isDragging, setIsDragging] = useState(false);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
+
+  const isDragging = useRef(false);
 
   const throttledUpdatePosition = throttle((x: number, y: number) => {
     dispatch(updateElementPosition({ id, x, y }));
   }, 50);
 
   const startDragging = (x: number, y: number) => {
-    setIsDragging(true);
+    isDragging.current = true;
     setOffset({ x: x - position.x, y: y - position.y });
   };
 
   const handlePointerDown = (e: React.MouseEvent | React.TouchEvent) => {
-    console.log("DEBUGUGUGUU handlePointerDown");
-    if (!enabled) return;
+    if (!enabled) return; // Only start dragging if enabled
+    e.preventDefault();
 
     const x = "clientX" in e ? e.clientX : e.touches[0].clientX;
     const y = "clientY" in e ? e.clientY : e.touches[0].clientY;
     startDragging(x, y);
 
-    // Lock scroll on the canvas using the ref
-    if (canvasRef.current) {
-      canvasRef.current.style.touchAction = "none";
-      canvasRef.current.style.userSelect = "none"; // Prevents text selection
-    }
+    e.stopPropagation();
   };
 
   const handlePointerMove = useCallback(
     (e: MouseEvent | TouchEvent) => {
-      if (isDragging) {
-        const x = "clientX" in e ? e.clientX : e.touches[0].clientX;
-        const y = "clientY" in e ? e.clientY : e.touches[0].clientY;
-        const adjustedX = x - offset.x;
-        const adjustedY = y - offset.y;
-        setPosition({ x: adjustedX, y: adjustedY });
-        throttledUpdatePosition(adjustedX, adjustedY);
-        e.stopPropagation();
+      if (!isDragging.current) return;
 
-      }
+      e.preventDefault();
+      const x = "clientX" in e ? e.clientX : e.touches[0].clientX;
+      const y = "clientY" in e ? e.clientY : e.touches[0].clientY;
+      const adjustedX = x - offset.x;
+      const adjustedY = y - offset.y;
+
+      setPosition({ x: adjustedX, y: adjustedY });
+      throttledUpdatePosition(adjustedX, adjustedY);
+      e.stopPropagation();
     },
-    [isDragging, offset, throttledUpdatePosition]
+    [offset, throttledUpdatePosition]
   );
 
   const handlePointerUp = useCallback(() => {
-    console.log("DEBUGUGUGUU handlePointerUp");
-    setIsDragging(false);
-
-    // Ensure canvas scroll is re-enabled if the hook is cleaned up
-    if (canvasRef.current) {
-      canvasRef.current.style.touchAction = "auto";
-      canvasRef.current.style.userSelect = "auto"; // Restores default
-    }
-  }, [canvasRef]);
+    isDragging.current = false;
+  }, []);
 
   useEffect(() => {
-    if (isDragging) {
+    if (isDragging.current) {
       window.addEventListener("mousemove", handlePointerMove);
       window.addEventListener("mouseup", handlePointerUp);
       window.addEventListener("touchmove", handlePointerMove);
       window.addEventListener("touchend", handlePointerUp);
     }
 
-    const canvas = canvasRef.current;
-
     return () => {
-      if (canvas) {
-        canvas.style.touchAction = "auto";
-      }
-
       window.removeEventListener("mousemove", handlePointerMove);
       window.removeEventListener("mouseup", handlePointerUp);
       window.removeEventListener("touchmove", handlePointerMove);
       window.removeEventListener("touchend", handlePointerUp);
     };
-  }, [isDragging, handlePointerMove, canvasRef, handlePointerUp]);
+  }, [handlePointerMove, handlePointerUp]);
 
   return { position, handlePointerDown };
 };
