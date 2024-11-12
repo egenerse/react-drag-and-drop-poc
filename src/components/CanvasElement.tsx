@@ -55,13 +55,6 @@ const CanvasElement: React.FC<CanvasElementProps> = ({
     onMove(position.x, position.y);
   }, [position, onMove]);
 
-  const portPositions = {
-    top: { top: -5, left: dimensions.width / 2 - 5 },
-    right: { top: dimensions.height / 2 - 5, left: dimensions.width - 5 },
-    bottom: { top: dimensions.height - 5, left: dimensions.width / 2 - 5 },
-    left: { top: dimensions.height / 2 - 5, left: -5 },
-  };
-
   const handleSelect = () => setSelected((prev) => !prev); // Toggle selection on click
 
   return (
